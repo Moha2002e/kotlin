@@ -3,23 +3,20 @@ package hepl.fead.model.entity
 import java.io.Serializable
 
 
-class Doctor : Serializable {
+class Patient : Serializable {
     private var id: Int? = null
-    private var specialite_id: Int? = null
     private var last_name: String? = null
     private var first_name: String? = null
-    private var password: String? = null
+    private var birth_date: String? = null
     
     fun getId(): Int? = id
     fun setId(id: Int?) { this.id = id }
-    fun getSpecialite_id(): Int? = specialite_id
-    fun setSpecialite_id(specialite_id: Int?) { this.specialite_id = specialite_id }
     fun getLast_name(): String? = last_name
     fun setLast_name(last_name: String?) { this.last_name = last_name }
     fun getFirst_name(): String? = first_name
     fun setFirst_name(first_name: String?) { this.first_name = first_name }
-    fun getPassword(): String? = password
-    fun setPassword(password: String?) { this.password = password }
+    fun getBirth_date(): String? = birth_date
+    fun setBirth_date(birth_date: String?) { this.birth_date = birth_date }
 
     override fun toString(): String {
         val ln = last_name ?: ""
@@ -34,7 +31,7 @@ class Doctor : Serializable {
     }
 
     companion object {
-        private const val serialVersionUID: Long = 1L
+        @JvmStatic
+        private val serialVersionUID: Long = 1L
     }
 }
-

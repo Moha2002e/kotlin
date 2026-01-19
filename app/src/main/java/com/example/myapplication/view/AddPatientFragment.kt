@@ -11,104 +11,129 @@ import com.example.myapplication.R
 import com.example.myapplication.controller.NetworkManager
 import com.example.myapplication.databinding.FragmentAddPatientBinding
 import com.example.myapplication.model.CAPRequest
+import com.example.myapplication.model.CAPResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class AddPatientFragment : Fragment() {
-    private var _binding: FragmentAddPatientBinding? = null
-    private val binding get() = _binding!!
-    private lateinit var networkManager: NetworkManager
+    private var _liage: FragmentAddPatientBinding? = null
+    private val liage get() = _liage!!
+    private lateinit var gestionnaireReseau: NetworkManager
     
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        gonfleur: LayoutInflater,
+        conteneur: ViewGroup?,
+        etatSauvegarde: Bundle?
     ): View {
-        _binding = FragmentAddPatientBinding.inflate(inflater, container, false)
-        return binding.root
+        _liage = FragmentAddPatientBinding.inflate(gonfleur, conteneur, false)
+        return liage.root
     }
     
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    override fun onViewCreated(vue: View, etatSauvegarde: Bundle?) {
+        super.onViewCreated(vue, etatSauvegarde)
         
-        val mainActivity = activity as? MainActivity
-        if (mainActivity == null) {
+        if (!initialiserDependances()) return
+        
+        configurerBoutonAjout()
+    }
+    
+    private fun initialiserDependances(): Boolean {
+        val activitePrincipale = activity as? MainActivity
+        if (activitePrincipale == null) {
+            return false
+        }
+        
+        gestionnaireReseau = activitePrincipale.obtenirGestionnaireReseau()
+        return true
+    }
+    
+    private fun configurerBoutonAjout() {
+        liage.addButton.setOnClickListener {
+            ajouterPatient()
+        }
+    }
+    
+    private fun ajouterPatient() {
+        val prenom = liage.firstNameEditText.text.toString().trim()
+        val nom = liage.lastNameEditText.text.toString().trim()
+        
+        if (champsVides(prenom, nom)) {
+            afficherMessage(getString(R.string.error_empty_fields))
             return
         }
         
-        networkManager = mainActivity.getNetworkManager()
-        
-        binding.addButton.setOnClickListener {
-            addPatient()
-        }
+        envoyerRequeteAjout(prenom, nom)
     }
     
-    private fun addPatient() {
-        val firstName = binding.firstNameEditText.text.toString().trim()
-        val lastName = binding.lastNameEditText.text.toString().trim()
-        
-        if (firstName.isEmpty() || lastName.isEmpty()) {
-            Toast.makeText(context, getString(R.string.error_empty_fields), Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        binding.addButton.isEnabled = false
+    private fun champsVides(vararg champs: String): Boolean {
+        return champs.any { it.isEmpty() }
+    }
+    
+    private fun envoyerRequeteAjout(prenom: String, nom: String) {
+        liage.addButton.isEnabled = false
         
         lifecycleScope.launch {
             try {
-                val request = CAPRequest.AddPatientRequest(
-                    firstName = firstName,
-                    lastName = lastName
+                val requete = CAPRequest.AddPatientRequest(
+                    firstName = prenom,
+                    lastName = nom
                 )
                 
-                val responseResult = networkManager.sendRequest(request)
+                val resultatReponse = gestionnaireReseau.sendRequest(requete)
                 
-                responseResult.onSuccess { response ->
-                    withContext(Dispatchers.Main) {
-                        binding.addButton.isEnabled = true
-                        
-                        if (response.success) {
-                            val patientId = response.data as? Int
-                            var message = ""
-                            if (patientId != null) {
-                                message = getString(R.string.success_patient_added, patientId)
-                            } else {
-                                message = getString(R.string.success_patient_added, 0)
-                            }
-                            
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                            binding.firstNameEditText.text?.clear()
-                            binding.lastNameEditText.text?.clear()
-                        } else {
-                            Toast.makeText(context, response.message, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }.onFailure { error ->
-                    withContext(Dispatchers.Main) {
-                        binding.addButton.isEnabled = true
-                        var errorMsg = "Erreur"
-                        if (error.message != null) {
-                            errorMsg = error.message!!
-                        }
-                        Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                    }
+                resultatReponse.onSuccess { reponse ->
+                    traiterReponseAjout(reponse)
+                }.onFailure { erreur ->
+                    gererErreur(erreur.message ?: getString(R.string.error))
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    binding.addButton.isEnabled = true
-                    var errorMsg = "Erreur"
-                    if (e.message != null) {
-                        errorMsg = e.message!!
-                    }
-                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                }
+                gererErreur(e.message ?: getString(R.string.error))
             }
         }
     }
     
+    private suspend fun traiterReponseAjout(reponse: CAPResponse) {
+        withContext(Dispatchers.Main) {
+            liage.addButton.isEnabled = true
+            
+            if (reponse.success) {
+                afficherSucces(reponse)
+                viderChamps()
+            } else {
+                afficherMessage(reponse.message)
+            }
+        }
+    }
+    
+    private fun afficherSucces(reponse: CAPResponse) {
+        val idPatient = reponse.data as? Int
+        val message = if (idPatient != null) {
+            getString(R.string.success_patient_added, idPatient)
+        } else {
+            getString(R.string.success_patient_added, 0)
+        }
+        afficherMessage(message)
+    }
+    
+    private suspend fun gererErreur(message: String) {
+        withContext(Dispatchers.Main) {
+            liage.addButton.isEnabled = true
+            afficherMessage(message)
+        }
+    }
+    
+    private fun viderChamps() {
+        liage.firstNameEditText.text?.clear()
+        liage.lastNameEditText.text?.clear()
+    }
+    
+    private fun afficherMessage(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+    
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null
+        _liage = null
     }
 }

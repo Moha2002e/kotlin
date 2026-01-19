@@ -11,8 +11,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:padding="16dp"
-        tools:listitem="@layout/item_consultation" />
+        android:padding="8dp"
+        tools:listitem="@layout/item_consultation"
+        android:layout_marginTop="150dp"
+        />
 
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 

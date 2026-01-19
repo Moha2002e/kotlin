@@ -7,6 +7,8 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -17,82 +19,106 @@ import com.example.myapplication.controller.NetworkManager
 import com.example.myapplication.databinding.ActivityMainBinding
 import com.example.myapplication.model.CAPRequest
 import com.google.android.material.navigation.NavigationView
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.lifecycle.lifecycleScope
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityMainBinding
-    private var appBarConfiguration: AppBarConfiguration? = null
-    private lateinit var networkManager: NetworkManager
-    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var liage: ActivityMainBinding
+    private var configurationBarreApps: AppBarConfiguration? = null
+    private lateinit var gestionnaireReseau: NetworkManager
+    private lateinit var preferencesPartagees: SharedPreferences
     
     companion object {
         @Volatile
         private var instance: MainActivity? = null
         
-        fun getInstance(): MainActivity? {
+        fun obtenirInstance(): MainActivity? {
             return instance
         }
     }
     
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        
+    override fun onCreate(etatSauvegarde: Bundle?) {
+        super.onCreate(etatSauvegarde)
         instance = this
         
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        liage = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(liage.root)
         
-        setSupportActionBar(binding.appBarMain.toolbar)
+        setSupportActionBar(liage.appBarMain.toolbar)
         
-        networkManager = NetworkManager()
-        sharedPreferences = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        initialiserComposants()
+        configurerNavigation()
+        verifierConnexionServeur()
+    }
+    
+    private fun initialiserComposants() {
+        gestionnaireReseau = NetworkManager()
+        preferencesPartagees = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         
-        val doctorId = sharedPreferences.getInt("doctor_id", -1)
-        if (doctorId != -1) {
-            networkManager.setDoctorId(doctorId)
+        restaurerSession()
+    }
+    
+    private fun restaurerSession() {
+        val idDocteur = preferencesPartagees.getInt("doctor_id", -1)
+        if (idDocteur != -1) {
+            gestionnaireReseau.setDoctorId(idDocteur)
         }
+    }
+    
+    private fun configurerNavigation() {
+        val tiroirLayout: DrawerLayout = liage.drawerLayout
+        val vueNavigation: NavigationView = liage.navView
         
-        val drawerLayout: DrawerLayout = binding.drawerLayout
-        val navView: NavigationView = binding.navView
-        
-        binding.root.post {
-            val navController = findNavController(R.id.nav_host_fragment_content_main)
-            
-            appBarConfiguration = AppBarConfiguration(
-                setOf(
-                    R.id.nav_consultations,
-                    R.id.nav_add_consultation,
-                    R.id.nav_add_patient,
-                    R.id.nav_search
-                ),
-                drawerLayout
-            )
-            
-            if (appBarConfiguration != null) {
-                setupActionBarWithNavController(navController, appBarConfiguration!!)
-            }
-            navView.setupWithNavController(navController)
-            
-            navView.setNavigationItemSelectedListener { menuItem ->
-                if (menuItem.itemId == R.id.nav_logout) {
-                    performLogout()
-                    true
-                } else {
-                    menuItem.isChecked = true
-                    drawerLayout.closeDrawers()
-                    navController.navigate(menuItem.itemId)
-                    true
-                }
+        // Utilisation de 'post' pour s'assurer que le NavController est prêt
+        liage.root.post {
+            try {
+                val controleurNavigation = findNavController(R.id.nav_host_fragment_content_main)
+                configurerBarreDAction(controleurNavigation, tiroirLayout)
+                configurerMenuNavigation(vueNavigation, controleurNavigation, tiroirLayout)
+            } catch (e: Exception) {
+                // NavController peut ne pas être prêt dans certains cas rares
             }
         }
+    }
+    
+    private fun configurerBarreDAction(controleurNavigation: NavController, tiroirLayout: DrawerLayout) {
+        configurationBarreApps = AppBarConfiguration(
+            setOf(
+                R.id.nav_consultations,
+                R.id.nav_add_consultation,
+                R.id.nav_add_patient,
+                R.id.nav_search
+            ),
+            tiroirLayout
+        )
         
+        configurationBarreApps?.let { config ->
+            setupActionBarWithNavController(controleurNavigation, config)
+        }
+    }
+    
+    private fun configurerMenuNavigation(vueNavigation: NavigationView, controleurNavigation: NavController, tiroirLayout: DrawerLayout) {
+        vueNavigation.setupWithNavController(controleurNavigation)
+        
+        vueNavigation.setNavigationItemSelectedListener { elementMenu ->
+            if (elementMenu.itemId == R.id.nav_logout) {
+                deconnecter()
+                true
+            } else {
+                elementMenu.isChecked = true
+                tiroirLayout.closeDrawers()
+                controleurNavigation.navigate(elementMenu.itemId)
+                true
+            }
+        }
+    }
+    
+    private fun verifierConnexionServeur() {
         lifecycleScope.launch {
-            if (!networkManager.isConnected()) {
-                val connectResult = networkManager.connect()
-                if (connectResult.isFailure) {
+            if (!gestionnaireReseau.isConnected()) {
+                val resultatConnexion = gestionnaireReseau.connect()
+                if (resultatConnexion.isFailure) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(this@MainActivity, getString(R.string.error_connection_failed), Toast.LENGTH_SHORT).show()
                     }
@@ -102,19 +128,15 @@ class MainActivity : AppCompatActivity() {
     }
     
     override fun onSupportNavigateUp(): Boolean {
-        try {
-            val navController = findNavController(R.id.nav_host_fragment_content_main)
-            if (appBarConfiguration != null) {
-                val result = navController.navigateUp(appBarConfiguration!!)
-                if (!result) {
-                    return super.onSupportNavigateUp()
-                }
-                return result
+        return try {
+            val controleurNavigation = findNavController(R.id.nav_host_fragment_content_main)
+            if (configurationBarreApps != null) {
+                controleurNavigation.navigateUp(configurationBarreApps!!) || super.onSupportNavigateUp()
             } else {
-                return super.onSupportNavigateUp()
+                super.onSupportNavigateUp()
             }
         } catch (e: Exception) {
-            return super.onSupportNavigateUp()
+            super.onSupportNavigateUp()
         }
     }
     
@@ -123,45 +145,32 @@ class MainActivity : AppCompatActivity() {
         instance = null
     }
     
-    private fun performLogout() {
+    private fun deconnecter() {
         lifecycleScope.launch {
             try {
-                val request = CAPRequest.LogoutRequest
-                val responseResult = networkManager.sendRequest(request)
-                
-                responseResult.onSuccess { response ->
-                    withContext(Dispatchers.Main) {
-                        networkManager.disconnect()
-                        sharedPreferences.edit().clear().apply()
-                        val intent = Intent(this@MainActivity, LoginActivity::class.java)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        startActivity(intent)
-                        finish()
-                    }
-                }.onFailure { error ->
-                    withContext(Dispatchers.Main) {
-                        networkManager.disconnect()
-                        sharedPreferences.edit().clear().apply()
-                        val intent = Intent(this@MainActivity, LoginActivity::class.java)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        startActivity(intent)
-                        finish()
-                    }
-                }
+                val requete = CAPRequest.LogoutRequest
+                gestionnaireReseau.sendRequest(requete)
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    networkManager.disconnect()
-                    sharedPreferences.edit().clear().apply()
-                    val intent = Intent(this@MainActivity, LoginActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    startActivity(intent)
-                    finish()
-                }
+                // Ignorer les erreurs réseau lors de la déconnexion
+            } finally {
+                nettoyerEtRediriger()
             }
         }
     }
     
-    fun getNetworkManager(): NetworkManager {
-        return networkManager
+    private suspend fun nettoyerEtRediriger() {
+        withContext(Dispatchers.Main) {
+            gestionnaireReseau.disconnect()
+            preferencesPartagees.edit().clear().apply()
+            
+            val intention = Intent(this@MainActivity, LoginActivity::class.java)
+            intention.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intention)
+            finish()
+        }
+    }
+    
+    fun obtenirGestionnaireReseau(): NetworkManager {
+        return gestionnaireReseau
     }
 }

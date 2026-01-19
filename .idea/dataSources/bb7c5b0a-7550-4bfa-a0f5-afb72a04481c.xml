@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<dataSource name="PourStudent@10.236.67.99">
+<dataSource name="PourStudent@192.168.0.15">
   <database-model serializer="dbm" dbms="MYSQL" family-id="MYSQL" format-version="4.54">
     <root id="1">
+      <DefaultAuthPlugin>mysql_native_password</DefaultAuthPlugin>
       <DefaultCasing>exact</DefaultCasing>
       <DefaultEngine>InnoDB</DefaultEngine>
       <DefaultTmpEngine>InnoDB</DefaultTmpEngine>
@@ -877,8 +878,8 @@ PourStudent|schema||Student||UPDATE|G</Grants>
     <schema id="274" parent="1" name="PourStudent">
       <AutoIntrospectionLevel>3</AutoIntrospectionLevel>
       <Current>1</Current>
-      <LastIntrospectionLevel>1</LastIntrospectionLevel>
-      <LastIntrospectionLocalTimestamp>2025-12-18.10:18:03</LastIntrospectionLocalTimestamp>
+      <LastIntrospectionLevel>3</LastIntrospectionLevel>
+      <LastIntrospectionLocalTimestamp>2025-12-06.21:58:40</LastIntrospectionLocalTimestamp>
       <CollationName>utf8_general_ci</CollationName>
     </schema>
     <schema id="275" parent="1" name="information_schema">
@@ -887,36 +888,36 @@ PourStudent|schema||Student||UPDATE|G</Grants>
     <user id="276" parent="1" name="Student"/>
     <table id="277" parent="274" name="consultations">
       <Comment>Table des consultations médicales</Comment>
-      <DetailsLevel>2</DetailsLevel>
+      <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
     <table id="278" parent="274" name="doctor">
       <Comment>Table des médecins</Comment>
-      <DetailsLevel>2</DetailsLevel>
+      <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
     <table id="279" parent="274" name="patient">
       <Comment>Table des patients</Comment>
-      <DetailsLevel>2</DetailsLevel>
+      <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
     <table id="280" parent="274" name="reports">
       <Comment>Table des rapports médicaux</Comment>
-      <DetailsLevel>2</DetailsLevel>
+      <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
     <table id="281" parent="274" name="specialties">
       <Comment>Table des spécialités médicales</Comment>
-      <DetailsLevel>2</DetailsLevel>
+      <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
     <column id="282" parent="277" name="id">
-      <AutoIncrement>99</AutoIncrement>
+      <AutoIncrement>100</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>int|0s</StoredType>
@@ -961,318 +962,324 @@ PourStudent|schema||Student||UPDATE|G</Grants>
       <Position>8</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <foreign-key id="290" parent="277" name="consultations_ibfk_1">
+    <column id="290" parent="277" name="duree">
+      <Comment>La durre de la consultation </Comment>
+      <NotNull>1</NotNull>
+      <Position>9</Position>
+      <StoredType>time|0s</StoredType>
+    </column>
+    <foreign-key id="291" parent="277" name="consultations_ibfk_1">
       <ColNames>patient_id</ColNames>
       <OnDelete>cascade</OnDelete>
       <RefColNames>id</RefColNames>
       <RefTableName>patient</RefTableName>
     </foreign-key>
-    <foreign-key id="291" parent="277" name="consultations_ibfk_2">
+    <foreign-key id="292" parent="277" name="consultations_ibfk_2">
       <ColNames>doctor_id</ColNames>
       <OnDelete>cascade</OnDelete>
       <RefColNames>id</RefColNames>
       <RefTableName>doctor</RefTableName>
     </foreign-key>
-    <index id="292" parent="277" name="PRIMARY">
+    <index id="293" parent="277" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="293" parent="277" name="unique_appointment">
+    <index id="294" parent="277" name="unique_appointment">
       <ColNames>doctor_id
 date
 hour</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="294" parent="277" name="idx_patient_date">
+    <index id="295" parent="277" name="idx_patient_date">
       <ColNames>patient_id
 date</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="295" parent="277" name="idx_patient">
+    <index id="296" parent="277" name="idx_patient">
       <ColNames>patient_id</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="296" parent="277" name="idx_doctor_date">
+    <index id="297" parent="277" name="idx_doctor_date">
       <ColNames>doctor_id
 date</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="297" parent="277" name="idx_doctor">
+    <index id="298" parent="277" name="idx_doctor">
       <ColNames>doctor_id</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="298" parent="277" name="idx_date">
+    <index id="299" parent="277" name="idx_date">
       <ColNames>date</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="299" parent="277" name="PRIMARY">
+    <key id="300" parent="277" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="300" parent="277" name="unique_appointment">
+    <key id="301" parent="277" name="unique_appointment">
       <UnderlyingIndexName>unique_appointment</UnderlyingIndexName>
     </key>
-    <column id="301" parent="278" name="id">
+    <column id="302" parent="278" name="id">
       <AutoIncrement>6</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>int|0s</StoredType>
     </column>
-    <column id="302" parent="278" name="first_name">
+    <column id="303" parent="278" name="first_name">
       <Comment>Prénom du médecin</Comment>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="303" parent="278" name="last_name">
+    <column id="304" parent="278" name="last_name">
       <Comment>Nom de famille du médecin</Comment>
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="304" parent="278" name="password">
+    <column id="305" parent="278" name="password">
       <Comment>Mot de passe du médecin (hashé)</Comment>
       <NotNull>1</NotNull>
       <Position>4</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="305" parent="278" name="specialite_id">
+    <column id="306" parent="278" name="specialite_id">
       <Comment>ID de la spécialité du médecin</Comment>
       <Position>5</Position>
       <StoredType>int|0s</StoredType>
     </column>
-    <column id="306" parent="278" name="created_at">
+    <column id="307" parent="278" name="created_at">
       <Comment>Date de création</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <Position>6</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="307" parent="278" name="updated_at">
+    <column id="308" parent="278" name="updated_at">
       <Comment>Date de dernière modification</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <OnUpdate>CURRENT_TIMESTAMP</OnUpdate>
       <Position>7</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <foreign-key id="308" parent="278" name="doctor_ibfk_1">
+    <foreign-key id="309" parent="278" name="doctor_ibfk_1">
       <ColNames>specialite_id</ColNames>
       <OnDelete>set-null</OnDelete>
       <RefColNames>id</RefColNames>
       <RefTableName>specialties</RefTableName>
     </foreign-key>
-    <index id="309" parent="278" name="PRIMARY">
+    <index id="310" parent="278" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="310" parent="278" name="idx_full_name">
+    <index id="311" parent="278" name="idx_full_name">
       <ColNames>first_name
 last_name</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="311" parent="278" name="idx_last_name">
+    <index id="312" parent="278" name="idx_last_name">
       <ColNames>last_name</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="312" parent="278" name="idx_specialite">
+    <index id="313" parent="278" name="idx_specialite">
       <ColNames>specialite_id</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="313" parent="278" name="PRIMARY">
+    <key id="314" parent="278" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="314" parent="279" name="id">
+    <column id="315" parent="279" name="id">
       <AutoIncrement>36</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>int|0s</StoredType>
     </column>
-    <column id="315" parent="279" name="first_name">
+    <column id="316" parent="279" name="first_name">
       <Comment>Prénom du patient</Comment>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="316" parent="279" name="last_name">
+    <column id="317" parent="279" name="last_name">
       <Comment>Nom de famille du patient</Comment>
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="317" parent="279" name="birth_date">
+    <column id="318" parent="279" name="birth_date">
       <Comment>Date de naissance du patient</Comment>
       <Position>4</Position>
       <StoredType>date|0s</StoredType>
     </column>
-    <column id="318" parent="279" name="created_at">
+    <column id="319" parent="279" name="created_at">
       <Comment>Date de création</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <Position>5</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="319" parent="279" name="updated_at">
+    <column id="320" parent="279" name="updated_at">
       <Comment>Date de dernière modification</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <OnUpdate>CURRENT_TIMESTAMP</OnUpdate>
       <Position>6</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <index id="320" parent="279" name="PRIMARY">
+    <index id="321" parent="279" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="321" parent="279" name="idx_full_name">
+    <index id="322" parent="279" name="idx_full_name">
       <ColNames>first_name
 last_name</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="322" parent="279" name="idx_last_name">
+    <index id="323" parent="279" name="idx_last_name">
       <ColNames>last_name</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="323" parent="279" name="idx_birth_date">
+    <index id="324" parent="279" name="idx_birth_date">
       <ColNames>birth_date</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="324" parent="279" name="PRIMARY">
+    <key id="325" parent="279" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="325" parent="280" name="id">
+    <column id="326" parent="280" name="id">
       <AutoIncrement>36</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>int|0s</StoredType>
     </column>
-    <column id="326" parent="280" name="doctor_id">
+    <column id="327" parent="280" name="doctor_id">
       <Comment>ID du médecin ayant créé le rapport</Comment>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>int|0s</StoredType>
     </column>
-    <column id="327" parent="280" name="patient_id">
+    <column id="328" parent="280" name="patient_id">
       <Comment>ID du patient concerné par le rapport</Comment>
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>int|0s</StoredType>
     </column>
-    <column id="328" parent="280" name="date_rapport">
+    <column id="329" parent="280" name="date_rapport">
       <Comment>Date du rapport médical</Comment>
       <NotNull>1</NotNull>
       <Position>4</Position>
       <StoredType>date|0s</StoredType>
     </column>
-    <column id="329" parent="280" name="texte_rapport">
+    <column id="330" parent="280" name="texte_rapport">
       <Comment>Contenu du rapport médical</Comment>
       <NotNull>1</NotNull>
       <Position>5</Position>
       <StoredType>text|0s</StoredType>
     </column>
-    <column id="330" parent="280" name="created_at">
+    <column id="331" parent="280" name="created_at">
       <Comment>Date de création</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <Position>6</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="331" parent="280" name="updated_at">
+    <column id="332" parent="280" name="updated_at">
       <Comment>Date de dernière modification</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <OnUpdate>CURRENT_TIMESTAMP</OnUpdate>
       <Position>7</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <foreign-key id="332" parent="280" name="reports_ibfk_1">
+    <foreign-key id="333" parent="280" name="reports_ibfk_1">
       <ColNames>doctor_id</ColNames>
       <OnDelete>cascade</OnDelete>
       <RefColNames>id</RefColNames>
       <RefTableName>doctor</RefTableName>
     </foreign-key>
-    <foreign-key id="333" parent="280" name="reports_ibfk_2">
+    <foreign-key id="334" parent="280" name="reports_ibfk_2">
       <ColNames>patient_id</ColNames>
       <OnDelete>cascade</OnDelete>
       <RefColNames>id</RefColNames>
       <RefTableName>patient</RefTableName>
     </foreign-key>
-    <index id="334" parent="280" name="PRIMARY">
+    <index id="335" parent="280" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="335" parent="280" name="idx_doctor_patient">
+    <index id="336" parent="280" name="idx_doctor_patient">
       <ColNames>doctor_id
 patient_id</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="336" parent="280" name="idx_doctor_date">
+    <index id="337" parent="280" name="idx_doctor_date">
       <ColNames>doctor_id
 date_rapport</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="337" parent="280" name="idx_doctor">
+    <index id="338" parent="280" name="idx_doctor">
       <ColNames>doctor_id</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="338" parent="280" name="idx_patient">
+    <index id="339" parent="280" name="idx_patient">
       <ColNames>patient_id</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="339" parent="280" name="idx_date">
+    <index id="340" parent="280" name="idx_date">
       <ColNames>date_rapport</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="340" parent="280" name="PRIMARY">
+    <key id="341" parent="280" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="341" parent="281" name="id">
+    <column id="342" parent="281" name="id">
       <AutoIncrement>4</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>int|0s</StoredType>
     </column>
-    <column id="342" parent="281" name="name">
+    <column id="343" parent="281" name="name">
       <Comment>Nom de la spécialité médicale</Comment>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="343" parent="281" name="created_at">
+    <column id="344" parent="281" name="created_at">
       <Comment>Date de création</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <Position>3</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="344" parent="281" name="updated_at">
+    <column id="345" parent="281" name="updated_at">
       <Comment>Date de dernière modification</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <OnUpdate>CURRENT_TIMESTAMP</OnUpdate>
       <Position>4</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <index id="345" parent="281" name="PRIMARY">
+    <index id="346" parent="281" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="346" parent="281" name="name">
+    <index id="347" parent="281" name="name">
       <ColNames>name</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="347" parent="281" name="PRIMARY">
+    <key id="348" parent="281" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="348" parent="281" name="name">
+    <key id="349" parent="281" name="name">
       <UnderlyingIndexName>name</UnderlyingIndexName>
     </key>
   </database-model>

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -11,132 +12,150 @@ import com.example.myapplication.R
 import com.example.myapplication.controller.NetworkManager
 import com.example.myapplication.databinding.ActivityLoginBinding
 import com.example.myapplication.model.CAPRequest
+import com.example.myapplication.model.CAPResponse
 import com.google.gson.Gson
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class LoginActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityLoginBinding
-    private lateinit var networkManager: NetworkManager
-    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var liage: ActivityLoginBinding
+    private lateinit var gestionnaireReseau: NetworkManager
+    private lateinit var preferencesPartagees: SharedPreferences
     
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityLoginBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+    override fun onCreate(etatSauvegarde: Bundle?) {
+        super.onCreate(etatSauvegarde)
+        liage = ActivityLoginBinding.inflate(layoutInflater)
+        setContentView(liage.root)
         
-        networkManager = NetworkManager()
-        sharedPreferences = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        
-        val savedLogin = sharedPreferences.getString("doctor_login", null)
-        val savedPassword = sharedPreferences.getString("doctor_password", null)
-        if (savedLogin != null && savedPassword != null) {
-            binding.loginEditText.setText(savedLogin)
-            binding.passwordEditText.setText(savedPassword)
-        }
-        
-        binding.loginButton.setOnClickListener {
-            performLogin()
+        initialiserComposants()
+        chargerIdentifiantsSauvegardes()
+        configurerEcouteurs()
+    }
+    
+    private fun initialiserComposants() {
+        gestionnaireReseau = NetworkManager()
+        preferencesPartagees = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    }
+    
+    private fun chargerIdentifiantsSauvegardes() {
+        val identifiantSauvegarde = preferencesPartagees.getString("doctor_login", null)
+        val motDePasseSauvegarde = preferencesPartagees.getString("doctor_password", null)
+        if (identifiantSauvegarde != null && motDePasseSauvegarde != null) {
+            liage.loginEditText.setText(identifiantSauvegarde)
+            liage.passwordEditText.setText(motDePasseSauvegarde)
         }
     }
     
-    private fun performLogin() {
-        val login = binding.loginEditText.text.toString().trim()
-        val password = binding.passwordEditText.text.toString()
+    private fun configurerEcouteurs() {
+        liage.loginButton.setOnClickListener {
+            tenterConnexion()
+        }
+    }
+    
+    private fun tenterConnexion() {
+        val identifiant = liage.loginEditText.text.toString().trim()
+        val motDePasse = liage.passwordEditText.text.toString()
         
-        if (login.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, getString(R.string.error_empty_fields), Toast.LENGTH_SHORT).show()
+        if (champsVides(identifiant, motDePasse)) {
+            afficherMessage(getString(R.string.error_empty_fields))
             return
         }
         
-        binding.loginButton.isEnabled = false
-        binding.progressBar.visibility = android.view.View.VISIBLE
+        afficherChargement(true)
         
         lifecycleScope.launch {
             try {
-                val connectResult = networkManager.connect()
-                
-                if (connectResult.isFailure) {
-                    withContext(Dispatchers.Main) {
-                        binding.loginButton.isEnabled = true
-                        binding.progressBar.visibility = android.view.View.GONE
-                        Toast.makeText(this@LoginActivity, getString(R.string.error_connection_failed), Toast.LENGTH_LONG).show()
-                    }
-                    return@launch
-                }
-                
-                val request = CAPRequest.LoginRequest(login, password)
-                val responseResult = networkManager.sendRequest(request)
-                
-                responseResult.onSuccess { response ->
-                    withContext(Dispatchers.Main) {
-                        if (response.success) {
-                            val doctorData = response.data
-                            if (doctorData != null) {
-                                try {
-                                    val doctorClass = doctorData.javaClass
-                                    val getIdMethod = doctorClass.getMethod("getId")
-                                    val id = getIdMethod.invoke(doctorData) as? Int
-                                    if (id != null) {
-                                        networkManager.setDoctorId(id)
-                                        sharedPreferences.edit().putInt("doctor_id", id).apply()
-                                    }
-                                } catch (e: Exception) {
-                                    // Erreur silencieuse
-                                }
-                            }
-                            
-                            sharedPreferences.edit()
-                                .putString("doctor_login", login)
-                                .putString("doctor_password", password)
-                                .putString("doctor_data", Gson().toJson(response.data))
-                                .apply()
-                            
-                            var successMessage = getString(R.string.login_success)
-                            if (response.message.isNotEmpty()) {
-                                successMessage = successMessage + "\n" + response.message
-                            }
-                            
-                            Toast.makeText(this@LoginActivity, successMessage, Toast.LENGTH_LONG).show()
-                            
-                            val intent = Intent(this@LoginActivity, MainActivity::class.java)
-                            startActivity(intent)
-                            finish()
-                        } else {
-                            binding.loginButton.isEnabled = true
-                            binding.progressBar.visibility = android.view.View.GONE
-                            
-                            var errorMessage = response.message
-                            if (errorMessage.isEmpty()) {
-                                errorMessage = getString(R.string.error_connection_failed)
-                            }
-                            
-                            Toast.makeText(this@LoginActivity, errorMessage, Toast.LENGTH_LONG).show()
-                        }
-                    }
-                }.onFailure { error ->
-                    withContext(Dispatchers.Main) {
-                        binding.loginButton.isEnabled = true
-                        binding.progressBar.visibility = android.view.View.GONE
-                        var errorMsg = "Erreur inconnue"
-                        if (error.message != null) {
-                            errorMsg = error.message!!
-                        }
-                        Toast.makeText(this@LoginActivity, errorMsg, Toast.LENGTH_LONG).show()
-                    }
-                }
+                executerRequeteConnexion(identifiant, motDePasse)
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    binding.loginButton.isEnabled = true
-                    binding.progressBar.visibility = android.view.View.GONE
-                    var errorMsg = "Erreur"
-                    if (e.message != null) {
-                        errorMsg = e.message!!
-                    }
-                    Toast.makeText(this@LoginActivity, errorMsg, Toast.LENGTH_LONG).show()
-                }
+                gererErreur(getString(R.string.error_request_failed, e.message ?: getString(R.string.unknown_error)))
             }
         }
+    }
+    
+    private suspend fun executerRequeteConnexion(identifiant: String, motDePasse: String) {
+        val resultatConnexion = gestionnaireReseau.connect()
+        
+        if (resultatConnexion.isFailure) {
+            gererErreur(getString(R.string.error_connection_failed))
+            return
+        }
+        
+        val requete = CAPRequest.LoginRequest(identifiant, motDePasse)
+        val resultatReponse = gestionnaireReseau.sendRequest(requete)
+        
+        resultatReponse.onSuccess { reponse ->
+            traiterReponseConnexion(reponse, identifiant, motDePasse)
+        }.onFailure { erreur ->
+            gererErreur(erreur.message ?: getString(R.string.unknown_error))
+        }
+    }
+
+    // Nous utilisons 'Any' car le type de réponse peut varier, mais ici nous attendons la structure de réponse du réseau
+    private suspend fun traiterReponseConnexion(reponse: CAPResponse, identifiant: String, motDePasse: String) {
+        withContext(Dispatchers.Main) {
+            if (reponse.success) {
+                sauvegarderSession(reponse.data, identifiant, motDePasse)
+                
+                var messageSucces = getString(R.string.login_success)
+                if (reponse.message.isNotEmpty()) {
+                    messageSucces += "\n${reponse.message}"
+                }
+                afficherMessage(messageSucces)
+                
+                naviguerVersPrincipal()
+            } else {
+                val messageErreur = if (reponse.message.isEmpty()) getString(R.string.error_connection_failed) else reponse.message
+                gererErreur(messageErreur)
+            }
+        }
+    }
+    
+    private fun sauvegarderSession(donneesDocteur: Any?, identifiant: String, motDePasse: String) {
+        if (donneesDocteur != null) {
+            try {
+                val classeDocteur = donneesDocteur.javaClass
+                val methodeGetId = classeDocteur.getMethod("getId")
+                val id = methodeGetId.invoke(donneesDocteur) as? Int
+                if (id != null) {
+                    gestionnaireReseau.setDoctorId(id)
+                    preferencesPartagees.edit().putInt("doctor_id", id).apply()
+                }
+            } catch (e: Exception) {
+                // Ignorer les erreurs de réflexion si l'ID ne peut pas être récupéré
+            }
+        }
+        
+        preferencesPartagees.edit()
+            .putString("doctor_login", identifiant)
+            .putString("doctor_password", motDePasse)
+            .putString("doctor_data", Gson().toJson(donneesDocteur))
+            .apply()
+    }
+    
+    private fun naviguerVersPrincipal() {
+        val intention = Intent(this, MainActivity::class.java)
+        startActivity(intention)
+        finish()
+    }
+    
+    private suspend fun gererErreur(message: String) {
+        withContext(Dispatchers.Main) {
+            afficherChargement(false)
+            afficherMessage(message)
+        }
+    }
+    
+    private fun afficherChargement(actif: Boolean) {
+        liage.loginButton.isEnabled = !actif
+        liage.progressBar.visibility = if (actif) View.VISIBLE else View.GONE
+    }
+    
+    private fun afficherMessage(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+    
+    private fun champsVides(identifiant: String, motDePasse: String): Boolean {
+        return identifiant.isEmpty() || motDePasse.isEmpty()
     }
 }

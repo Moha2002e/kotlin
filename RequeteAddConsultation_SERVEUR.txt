@@ -1,3 +1,5 @@
+
+
 package consultation.server.protocol;
 
 import java.io.Serializable;
@@ -18,7 +20,7 @@ public class RequeteAddConsultation implements Serializable {
     private transient String dateString;
     private transient String timeString;
     private transient int duree;
-
+    
     public RequeteAddConsultation(int doctorId, LocalDate date, LocalTime time, int count, int duree) {
         this.doctorId = doctorId;
         this.date = date;
@@ -28,7 +30,7 @@ public class RequeteAddConsultation implements Serializable {
         this.timeString = time != null ? time.toString() : null;
         this.duree = duree;
     }
-
+    
     public RequeteAddConsultation(int doctorId, String dateString, String timeString, int count, int duree) {
         this.doctorId = doctorId;
         this.count = count;
@@ -61,7 +63,7 @@ public class RequeteAddConsultation implements Serializable {
             throw new IllegalArgumentException("La durée doit être supérieure à 0");
         }
     }
-
+    
     private void writeObject(ObjectOutputStream out) throws IOException {
         String dateStr = dateString != null ? dateString : (date != null ? date.toString() : null);
         String timeStr = timeString != null ? timeString : (time != null ? time.toString() : null);
@@ -82,11 +84,9 @@ public class RequeteAddConsultation implements Serializable {
             String timeStr = (String) in.readObject();
             this.dateString = dateStr;
             this.timeString = timeStr;
-
             if (this.duree <= 0) {
-                throw new IOException("La durée doit être supérieure à 0, valeur reçue: " + this.duree);
+                throw new IOException("La durée doit être supérieure à 0");
             }
-
             if (dateStr != null && !dateStr.isEmpty()) {
                 try {
                     this.date = LocalDate.parse(dateStr);
@@ -96,7 +96,6 @@ public class RequeteAddConsultation implements Serializable {
             } else {
                 throw new IOException("dateString ne peut pas être null ou vide");
             }
-
             if (timeStr != null && !timeStr.isEmpty()) {
                 try {
                     if (timeStr.length() == 5 && timeStr.indexOf(':') == 2) {
@@ -110,16 +109,11 @@ public class RequeteAddConsultation implements Serializable {
             } else {
                 throw new IOException("timeString ne peut pas être null ou vide");
             }
-        } catch (java.io.OptionalDataException e) {
-            throw new IOException(
-                    "Erreur de format de sérialisation - le serveur doit utiliser la même version de RequeteAddConsultation avec duree en int. "
-                            + e.getMessage(),
-                    e);
         } catch (Exception e) {
             throw new IOException("Erreur lors de la désérialisation de RequeteAddConsultation: " + e.getMessage(), e);
         }
     }
-
+    
     private void ensureInitialized() {
         if (date == null && dateString != null && !dateString.isEmpty()) {
             try {
@@ -138,11 +132,11 @@ public class RequeteAddConsultation implements Serializable {
             }
         }
     }
-
+    
     public int getDoctorId() {
         return doctorId;
     }
-
+    
     public LocalDate getDate() {
         if (date == null && dateString != null) {
             try {
@@ -152,7 +146,7 @@ public class RequeteAddConsultation implements Serializable {
         }
         return date;
     }
-
+    
     public LocalTime getTime() {
         if (time == null && timeString != null && !timeString.isEmpty()) {
             try {
@@ -167,11 +161,11 @@ public class RequeteAddConsultation implements Serializable {
         }
         return time;
     }
-
+    
     public int getCount() {
         return count;
     }
-
+    
     public int getDuree() {
         return duree;
     }

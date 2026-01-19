@@ -1,18 +1,18 @@
 package com.example.myapplication.controller
 
+import android.util.Log
 import com.example.myapplication.model.CAPRequest
 import com.example.myapplication.model.CAPResponse
 import consultation.server.protocol.*
-import org.threeten.bp.LocalDate
-import org.threeten.bp.LocalTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.net.Socket
 
 class NetworkManager(
-    private val serverHost: String = "192.168.0.14",
+    private val serverHost: String = "192.168.92.1",
     private val serverPort: Int = 9090
 ) {
     private var socket: Socket? = null
@@ -38,13 +38,12 @@ class NetworkManager(
         }
         
         if (request is CAPRequest.AddConsultationRequest) {
-            val date = LocalDate.parse(request.date)
-            val time = LocalTime.parse(request.hour)
             val doctorIdValue = doctorId
             if (doctorIdValue == null) {
                 throw IllegalStateException("Médecin non connecté")
             }
-            return RequeteAddConsultation(doctorIdValue, date, time, request.consecutiveCount)
+
+            return RequeteAddConsultation(doctorIdValue, request.date, request.hour, request.consecutiveCount, request.duree)
         }
         
         if (request is CAPRequest.AddPatientRequest) {
@@ -52,33 +51,23 @@ class NetworkManager(
         }
         
         if (request is CAPRequest.UpdateConsultationRequest) {
-            var newDate: LocalDate? = null
-            if (request.date != null) {
-                newDate = LocalDate.parse(request.date)
-            }
-            var newTime: LocalTime? = null
-            if (request.hour != null) {
-                newTime = LocalTime.parse(request.hour)
-            }
+
             return RequeteUpdateConsultation(
-                request.consultationId, newDate, newTime, request.patientId, request.reason
+                request.consultationId, request.date, request.hour, request.patientId, request.reason
             )
         }
         
         if (request is CAPRequest.SearchConsultationsRequest) {
-            var fromDate: LocalDate? = null
-            if (request.date != null) {
-                fromDate = LocalDate.parse(request.date)
-            }
-            var toDate: LocalDate? = null
-            if (request.date != null) {
-                toDate = LocalDate.parse(request.date)
-            }
-            return RequeteSearchConsultations(doctorId, request.patientId, fromDate, toDate)
+
+            return RequeteSearchConsultations(doctorId, request.patientId, request.date, request.date)
         }
         
         if (request is CAPRequest.DeleteConsultationRequest) {
             return RequeteDeleteConsultation(request.consultationId)
+        }
+        
+        if (request is CAPRequest.ListPatientsRequest) {
+            return RequeteListPatients()
         }
         
         if (request is CAPRequest.LogoutRequest) {
@@ -92,6 +81,28 @@ class NetworkManager(
         doctorId = id
     }
     
+
+    private fun logSerializedObject(obj: Any, tag: String = "NetworkManager") {
+        try {
+            val baos = ByteArrayOutputStream()
+            val debugOos = ObjectOutputStream(baos)
+            debugOos.writeObject(obj)
+            debugOos.flush()
+            debugOos.close()
+
+            val bytes = baos.toByteArray()
+            val hexHead = bytes.take(128).joinToString(" ") { String.format("%02X", it) }
+
+            Log.d(tag, "═══════════════════════════════════════")
+            Log.d(tag, "📦 Objet à envoyer: ${obj::class.java.simpleName}")
+            Log.d(tag, "   Taille totale: ${bytes.size} octets")
+            Log.d(tag, "   Premiers 128 octets (hex): $hexHead")
+            Log.d(tag, "═══════════════════════════════════════")
+        } catch (e: Exception) {
+            Log.e(tag, "❌ Erreur lors de la sérialisation de diagnostic: ${e.message}", e)
+        }
+    }
+
     private fun convertResponse(reponseTraitee: ReponseTraitee): CAPResponse {
         return CAPResponse(
             success = reponseTraitee.isSuccess(),
@@ -102,22 +113,34 @@ class NetworkManager(
     
     suspend fun sendRequest(request: CAPRequest): Result<CAPResponse> = withContext(Dispatchers.IO) {
         try {
-            if (!isConnected()) {
-                val connectResult = connect()
-                if (connectResult.isFailure) {
-                    return@withContext Result.failure(Exception("Impossible de se reconnecter au serveur"))
-                }
+            if (socket == null) {
+                return@withContext Result.failure(Exception("Socket non connecté"))
             }
-            
-            if (socket == null || outputStream == null || inputStream == null) {
-                return@withContext Result.failure(Exception("Erreur interne de connexion"))
+            if (socket?.isClosed == true) {
+                return@withContext Result.failure(Exception("Socket fermé"))
+            }
+            if (outputStream == null) {
+                return@withContext Result.failure(Exception("OutputStream non initialisé"))
+            }
+            if (inputStream == null) {
+                return@withContext Result.failure(Exception("InputStream non initialisé"))
             }
             
             val requeteObj = convertRequest(request)
             
+
+            Log.d("NetworkManager", ">>> Préparation envoi requête: ${request::class.java.simpleName}")
+            logSerializedObject(requeteObj)
+
+
             outputStream?.writeObject(requeteObj)
             outputStream?.flush()
             
+
+            outputStream?.reset()
+
+            Log.d("NetworkManager", "✅ Objet envoyé avec succès, attente de la réponse...")
+
             val responseObj = inputStream?.readObject()
             
             if (responseObj == null) {
@@ -139,17 +162,17 @@ class NetworkManager(
         try {
             inputStream?.close()
         } catch (e: Exception) {
-            // Ignorer
+
         }
         try {
             outputStream?.close()
         } catch (e: Exception) {
-            // Ignorer
+
         }
         try {
             socket?.close()
         } catch (e: Exception) {
-            // Ignorer
+
         }
         inputStream = null
         outputStream = null

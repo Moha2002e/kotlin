@@ -1,10 +1,16 @@
 package com.example.myapplication.view
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import android.widget.EditText
+import android.widget.Spinner
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -13,165 +19,419 @@ import com.example.myapplication.R
 import com.example.myapplication.controller.NetworkManager
 import com.example.myapplication.databinding.FragmentConsultationListBinding
 import com.example.myapplication.model.CAPRequest
+import com.example.myapplication.model.CAPResponse
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import hepl.fead.model.entity.Consultation
+import hepl.fead.model.entity.Patient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-import androidx.navigation.fragment.findNavController
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class ConsultationListFragment : Fragment() {
-    private var _binding: FragmentConsultationListBinding? = null
-    private val binding get() = _binding!!
-    private lateinit var adapter: ConsultationAdapter
-    private lateinit var networkManager: NetworkManager
+    private var _liage: FragmentConsultationListBinding? = null
+    private val liage get() = _liage!!
+    private lateinit var adaptateur: ConsultationAdapter
+    private lateinit var gestionnaireReseau: NetworkManager
     
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        gonfleur: LayoutInflater,
+        conteneur: ViewGroup?,
+        etatSauvegarde: Bundle?
     ): View {
-        _binding = FragmentConsultationListBinding.inflate(inflater, container, false)
-        return binding.root
+        _liage = FragmentConsultationListBinding.inflate(gonfleur, conteneur, false)
+        return liage.root
     }
     
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    override fun onViewCreated(vue: View, etatSauvegarde: Bundle?) {
+        super.onViewCreated(vue, etatSauvegarde)
         
-        val mainActivity = activity as? MainActivity
-        if (mainActivity == null) {
-            Toast.makeText(context, "Erreur: activité invalide", Toast.LENGTH_SHORT).show()
-            return
+        if (!initialiserDependances()) return
+        
+        configurerRecycleur()
+        configurerRafraichissement()
+        chargerConsultations()
+    }
+    
+    private fun initialiserDependances(): Boolean {
+        val activitePrincipale = activity as? MainActivity
+        if (activitePrincipale == null) {
+            afficherMessage(getString(R.string.error_activity_invalid))
+            return false
         }
         
-        networkManager = mainActivity.getNetworkManager()
-        
-        adapter = ConsultationAdapter(
-            onDeleteClick = { consultation ->
-                deleteConsultation(consultation)
+        gestionnaireReseau = activitePrincipale.obtenirGestionnaireReseau()
+        return true
+    }
+    
+    private fun configurerRecycleur() {
+        adaptateur = ConsultationAdapter(
+            surClicSupprimer = { consultation ->
+                supprimerConsultation(consultation)
             },
-            onUpdateClick = { consultation ->
-                val bundle = Bundle()
-                bundle.putSerializable("consultation", consultation)
-                findNavController().navigate(R.id.action_nav_consultations_to_nav_update_consultation, bundle)
+            surClicEditer = { consultation ->
+                afficherBoiteDialogueEdition(consultation)
             },
-            showDeleteButton = true
+            afficherBoutonSupprimer = true
         )
         
-        binding.consultationsRecyclerView.layoutManager = LinearLayoutManager(context)
-        binding.consultationsRecyclerView.adapter = adapter
-        
-        binding.swipeRefreshLayout.setOnRefreshListener {
-            loadConsultations()
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        loadConsultations()
+        liage.consultationsRecyclerView.layoutManager = LinearLayoutManager(context)
+        liage.consultationsRecyclerView.adapter = adaptateur
     }
     
-    private fun loadConsultations() {
-        binding.swipeRefreshLayout.isRefreshing = true
+    private fun configurerRafraichissement() {
+        liage.swipeRefreshLayout.setOnRefreshListener {
+            chargerConsultations()
+        }
+    }
+    
+    private fun chargerConsultations() {
+        liage.swipeRefreshLayout.isRefreshing = true
         
         lifecycleScope.launch {
             try {
-                val request = CAPRequest.SearchConsultationsRequest()
-                val responseResult = networkManager.sendRequest(request)
-                
-                responseResult.onSuccess { response ->
-                    withContext(Dispatchers.Main) {
-                        binding.swipeRefreshLayout.isRefreshing = false
-                        
-                        if (response.success) {
-                            val consultations = parseConsultations(response.data)
-                            adapter.submitList(consultations)
-                            
-                            if (consultations.isEmpty()) {
-                                Toast.makeText(context, getString(R.string.no_consultations), Toast.LENGTH_SHORT).show()
-                            }
-                        } else {
-                            Toast.makeText(context, response.message, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }.onFailure { error ->
-                    withContext(Dispatchers.Main) {
-                        binding.swipeRefreshLayout.isRefreshing = false
-                        var errorMsg = "Erreur"
-                        if (error.message != null) {
-                            errorMsg = error.message!!
-                        }
-                        Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                    }
-                }
+                executerRequeteChargement()
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    binding.swipeRefreshLayout.isRefreshing = false
-                    var errorMsg = "Erreur"
-                    if (e.message != null) {
-                        errorMsg = e.message!!
-                    }
-                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                }
+                gererErreur(e.message ?: "Erreur")
             }
         }
     }
     
-    private fun parseConsultations(data: Any?): List<Consultation> {
-        if (data == null) {
-            return emptyList()
-        }
+    private suspend fun executerRequeteChargement() {
+        val requete = CAPRequest.SearchConsultationsRequest()
+        val resultatReponse = gestionnaireReseau.sendRequest(requete)
         
-        try {
-            val jsonString = Gson().toJson(data)
-            val listType = object : TypeToken<List<Consultation>>() {}.type
-            val result = Gson().fromJson<List<Consultation>>(jsonString, listType) ?: return emptyList()
-            return result
+        resultatReponse.onSuccess { reponse ->
+            traiterReponseChargement(reponse)
+        }.onFailure { erreur ->
+            gererErreur(erreur.message ?: "Erreur")
+        }
+    }
+    
+    private suspend fun traiterReponseChargement(reponse: CAPResponse) {
+        withContext(Dispatchers.Main) {
+            liage.swipeRefreshLayout.isRefreshing = false
+            
+            if (reponse.success) {
+                val listeConsultations = convertirConsultations(reponse.data)
+                adaptateur.submitList(listeConsultations)
+                
+                if (listeConsultations.isEmpty()) {
+                    afficherMessage(getString(R.string.no_consultations))
+                }
+            } else {
+                afficherMessage(reponse.message)
+            }
+        }
+    }
+    
+    private suspend fun gererErreur(message: String) {
+        withContext(Dispatchers.Main) {
+            liage.swipeRefreshLayout.isRefreshing = false
+            afficherMessage(message)
+        }
+    }
+    
+    private fun convertirConsultations(donnees: Any?): List<Consultation> {
+        if (donnees == null) return emptyList()
+        
+        return try {
+            val chaineJson = Gson().toJson(donnees)
+            val typeListe = object : TypeToken<List<Consultation>>() {}.type
+            Gson().fromJson<List<Consultation>>(chaineJson, typeListe) ?: emptyList()
         } catch (e: Exception) {
-            return emptyList()
+            emptyList()
         }
     }
     
-    private fun deleteConsultation(consultation: Consultation) {
-        val consultationId = consultation.getId() ?: return
+    private fun supprimerConsultation(consultation: Consultation) {
+        val idConsultation = consultation.getId() ?: return
 
         lifecycleScope.launch {
             try {
-                val request = CAPRequest.DeleteConsultationRequest(consultationId)
-                val responseResult = networkManager.sendRequest(request)
+                val requete = CAPRequest.DeleteConsultationRequest(idConsultation)
+                val resultatReponse = gestionnaireReseau.sendRequest(requete)
                 
-                responseResult.onSuccess { response ->
+                resultatReponse.onSuccess { reponse ->
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, response.message, Toast.LENGTH_SHORT).show()
-                        if (response.success) {
-                            loadConsultations()
+                        afficherMessage(reponse.message)
+                        if (reponse.success) {
+                            chargerConsultations()
                         }
                     }
-                }.onFailure { error ->
+                }.onFailure { erreur ->
+                    afficherMessage(erreur.message ?: "Erreur")
+                }
+            } catch (e: Exception) {
+                afficherMessage(e.message ?: "Erreur")
+            }
+        }
+    }
+    
+    private data class ElementPatient(val id: Int?, val nom: String) {
+        override fun toString(): String = nom
+    }
+    
+    private fun configurerSelecteurDateInDialogue(champDate: EditText) {
+        val calendrier = Calendar.getInstance()
+        
+        initialiserDateCalendrier(calendrier, champDate.text.toString())
+        
+        champDate.setOnClickListener {
+            DatePickerDialog(
+                requireContext(),
+                { _, annee, mois, jour ->
+                    calendrier.set(annee, mois, jour)
+                    val formatDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    champDate.setText(formatDate.format(calendrier.time))
+                },
+                calendrier.get(Calendar.YEAR),
+                calendrier.get(Calendar.MONTH),
+                calendrier.get(Calendar.DAY_OF_MONTH)
+            ).show()
+        }
+        
+        champDate.isFocusable = false
+        champDate.isClickable = true
+    }
+    
+    private fun initialiserDateCalendrier(calendrier: Calendar, dateTexte: String) {
+        if (dateTexte.isNotEmpty()) {
+            try {
+                val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val date = format.parse(dateTexte)
+                if (date != null) {
+                    calendrier.time = date
+                }
+            } catch (e: Exception) { }
+        }
+    }
+    
+    private fun configurerSelecteurHeureInDialogue(champHeure: EditText) {
+        val calendrier = Calendar.getInstance()
+        
+        initialiserHeureCalendrier(calendrier, champHeure.text.toString())
+        
+        champHeure.setOnClickListener {
+            TimePickerDialog(
+                requireContext(),
+                { _, heure, minute ->
+                    calendrier.set(Calendar.HOUR_OF_DAY, heure)
+                    calendrier.set(Calendar.MINUTE, minute)
+                    val formatHeure = SimpleDateFormat("HH:mm", Locale.getDefault())
+                    champHeure.setText(formatHeure.format(calendrier.time))
+                },
+                calendrier.get(Calendar.HOUR_OF_DAY),
+                calendrier.get(Calendar.MINUTE),
+                true
+            ).show()
+        }
+        
+        champHeure.isFocusable = false
+        champHeure.isClickable = true
+    }
+    
+    private fun initialiserHeureCalendrier(calendrier: Calendar, heureTexte: String) {
+        if (heureTexte.isNotEmpty()) {
+            try {
+                val format = SimpleDateFormat("HH:mm", Locale.getDefault())
+                val heure = format.parse(heureTexte)
+                if (heure != null) {
+                    calendrier.time = heure
+                }
+            } catch (e: Exception) { }
+        }
+    }
+    
+    private fun afficherBoiteDialogueEdition(consultation: Consultation) {
+        val idConsultation = consultation.getId() ?: return
+        
+        val vueDialogue = layoutInflater.inflate(R.layout.dialog_edit_consultation, null)
+        val champDate = vueDialogue.findViewById<EditText>(R.id.editDateEditText)
+        val champHeure = vueDialogue.findViewById<EditText>(R.id.editTimeEditText)
+        val champRaison = vueDialogue.findViewById<EditText>(R.id.editReasonEditText)
+        val selecteurPatient = vueDialogue.findViewById<Spinner>(R.id.editPatientSpinner)
+        
+        remplirChampsExistants(consultation, champDate, champHeure, champRaison)
+        configurerSelecteurDateInDialogue(champDate)
+        configurerSelecteurHeureInDialogue(champHeure)
+        configurerSelecteurPatients(selecteurPatient, consultation.getPatient_id())
+        
+        construireEtAfficherDialogue(vueDialogue, idConsultation, champDate, champHeure, champRaison, selecteurPatient)
+    }
+    
+    private fun remplirChampsExistants(consultation: Consultation, date: EditText, heure: EditText, raison: EditText) {
+        consultation.getDate()?.let { date.setText(it) }
+        consultation.getHour()?.let { heure.setText(it) }
+        consultation.getReason()?.let { raison.setText(it) }
+    }
+    
+    private fun configurerSelecteurPatients(selecteur: Spinner, idPatientActuel: Int?) {
+        val listePatients = mutableListOf(ElementPatient(null, getString(R.string.no_patient_spinner)))
+        val adaptateurSpinner = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            listePatients
+        )
+        adaptateurSpinner.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        selecteur.adapter = adaptateurSpinner
+        
+        chargerPatientsPourDialogue(selecteur, listePatients, idPatientActuel)
+    }
+    
+    private fun construireEtAfficherDialogue(
+        vue: View, 
+        id: Int, 
+        date: EditText, 
+        heure: EditText, 
+        raison: EditText, 
+        selecteurPatient: Spinner
+    ) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(getString(R.string.edit_consultation))
+            .setView(vue)
+            .setPositiveButton(getString(R.string.save)) { _, _ ->
+                val nouvelleDate = date.text.toString().trim()
+                val nouvelleHeure = heure.text.toString().trim()
+                val nouvelleRaison = raison.text.toString().trim()
+                val patientSelectionne = selecteurPatient.selectedItem as? ElementPatient
+                val idPatient = patientSelectionne?.id
+                
+                mettreAJourConsultation(id, nouvelleDate, nouvelleHeure, idPatient, nouvelleRaison)
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .create()
+            .show()
+    }
+    
+    private fun chargerPatientsPourDialogue(selecteur: Spinner, listePatients: MutableList<ElementPatient>, idPatientActuel: Int?) {
+        lifecycleScope.launch {
+            try {
+                val requete = CAPRequest.ListPatientsRequest
+                val resultatReponse = gestionnaireReseau.sendRequest(requete)
+                
+                resultatReponse.onSuccess { reponse ->
+                    if (reponse.success) {
+                        miseAJourListePatients(reponse.data, selecteur, listePatients, idPatientActuel)
+                    }
+                }
+            } catch (e: Exception) { }
+        }
+    }
+    
+    private suspend fun miseAJourListePatients(donnees: Any?, selecteur: Spinner, listePatients: MutableList<ElementPatient>, idPatientActuel: Int?) {
+        withContext(Dispatchers.Main) {
+            val patientsCharges = convertirPatients(donnees)
+            listePatients.clear()
+            listePatients.add(ElementPatient(null, getString(R.string.no_patient_spinner)))
+            listePatients.addAll(patientsCharges)
+            
+            (selecteur.adapter as? ArrayAdapter<*>)?.notifyDataSetChanged()
+            
+            if (idPatientActuel != null) {
+                val index = listePatients.indexOfFirst { it.id == idPatientActuel }
+                if (index >= 0) {
+                    selecteur.setSelection(index)
+                }
+            }
+        }
+    }
+    
+    private fun convertirPatients(donnees: Any?): List<ElementPatient> {
+        if (donnees == null) return emptyList()
+        
+        return try {
+            when (donnees) {
+                is List<*> -> donnees.mapNotNull { item -> extrairePatient(item) }
+                else -> emptyList()
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+    
+    private fun extrairePatient(item: Any?): ElementPatient? {
+        if (item == null) return null
+        
+        if (item is Patient) {
+            val id = item.getId()
+            val nom = item.getName()
+            return if (id != null && nom.isNotEmpty()) ElementPatient(id, nom) else null
+        }
+        
+        return extraireViaReflexion(item)
+    }
+
+    private fun extraireViaReflexion(item: Any): ElementPatient? {
+        try {
+            val classePatient = item.javaClass
+            val methodeGetId = classePatient.getMethod("getId")
+            val methodeGetLastName = classePatient.getMethod("getLast_name")
+            val methodeGetFirstName = classePatient.getMethod("getFirst_name")
+            
+            val idObj = methodeGetId.invoke(item)
+            val nomFamille = methodeGetLastName.invoke(item) as? String ?: ""
+            val prenom = methodeGetFirstName.invoke(item) as? String ?: ""
+            
+            val id = when (idObj) {
+                is Number -> idObj.toInt()
+                else -> null
+            }
+            
+            val nomComplet = "$nomFamille $prenom".trim()
+            
+            return if (id != null && nomComplet.isNotEmpty()) {
+                ElementPatient(id, nomComplet)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            return null
+        }
+    }
+    
+    private fun mettreAJourConsultation(id: Int, date: String?, heure: String?, idPatient: Int?, raison: String?) {
+        lifecycleScope.launch {
+            try {
+                val requete = CAPRequest.UpdateConsultationRequest(
+                    consultationId = id,
+                    date = if (date.isNullOrEmpty()) null else date,
+                    hour = if (heure.isNullOrEmpty()) null else heure,
+                    patientId = idPatient,
+                    reason = if (raison.isNullOrEmpty()) null else raison
+                )
+                
+                val resultatReponse = gestionnaireReseau.sendRequest(requete)
+                
+                resultatReponse.onSuccess { reponse ->
                     withContext(Dispatchers.Main) {
-                        var errorMsg = "Erreur"
-                        if (error.message != null) {
-                            errorMsg = error.message!!
+                        afficherMessage(reponse.message)
+                        if (reponse.success) {
+                            chargerConsultations()
                         }
-                        Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                    }
+                }.onFailure { erreur ->
+                    withContext(Dispatchers.Main) {
+                        afficherMessage(erreur.message ?: "Erreur")
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    var errorMsg = "Erreur"
-                    if (e.message != null) {
-                        errorMsg = e.message!!
-                    }
-                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                    afficherMessage(e.message ?: "Erreur")
                 }
             }
         }
+    }
+    
+    private fun afficherMessage(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
     
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null
+        _liage = null
     }
 }

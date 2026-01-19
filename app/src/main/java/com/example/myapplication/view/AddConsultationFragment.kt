@@ -1,9 +1,12 @@
 package com.example.myapplication.view
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -11,141 +14,188 @@ import com.example.myapplication.R
 import com.example.myapplication.controller.NetworkManager
 import com.example.myapplication.databinding.FragmentAddConsultationBinding
 import com.example.myapplication.model.CAPRequest
+import com.example.myapplication.model.CAPResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class AddConsultationFragment : Fragment() {
-    private var _binding: FragmentAddConsultationBinding? = null
-    private val binding get() = _binding!!
-    private lateinit var networkManager: NetworkManager
+    private var _liage: FragmentAddConsultationBinding? = null
+    private val liage get() = _liage!!
+    private lateinit var gestionnaireReseau: NetworkManager
     
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        gonfleur: LayoutInflater,
+        conteneur: ViewGroup?,
+        etatSauvegarde: Bundle?
     ): View {
-        _binding = FragmentAddConsultationBinding.inflate(inflater, container, false)
-        return binding.root
+        _liage = FragmentAddConsultationBinding.inflate(gonfleur, conteneur, false)
+        return liage.root
     }
     
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    override fun onViewCreated(vue: View, etatSauvegarde: Bundle?) {
+        super.onViewCreated(vue, etatSauvegarde)
         
-        val mainActivity = activity as? MainActivity
-        if (mainActivity == null) {
-            return
-        }
+        if (!initialiserDependances()) return
         
-        networkManager = mainActivity.getNetworkManager()
-
-        binding.dateEditText.setOnClickListener {
-            showDatePicker()
-        }
-
-        binding.timeEditText.setOnClickListener {
-            showTimePicker()
-        }
-        
-        binding.addButton.setOnClickListener {
-            addConsultation()
-        }
-    }
-
-    private fun showDatePicker() {
-        val calendar = java.util.Calendar.getInstance()
-        val year = calendar.get(java.util.Calendar.YEAR)
-        val month = calendar.get(java.util.Calendar.MONTH)
-        val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
-
-        val datePickerDialog = android.app.DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
-            val formattedDate = String.format("%04d-%02d-%02d", selectedYear, selectedMonth + 1, selectedDay)
-            binding.dateEditText.setText(formattedDate)
-        }, year, month, day)
-
-        datePickerDialog.show()
-    }
-
-    private fun showTimePicker() {
-        val calendar = java.util.Calendar.getInstance()
-        val hour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
-        val minute = calendar.get(java.util.Calendar.MINUTE)
-
-        val timePickerDialog = android.app.TimePickerDialog(requireContext(), { _, selectedHour, selectedMinute ->
-            val formattedTime = String.format("%02d:%02d", selectedHour, selectedMinute)
-            binding.timeEditText.setText(formattedTime)
-        }, hour, minute, true)
-
-        timePickerDialog.show()
+        configurerSelecteurDate()
+        configurerSelecteurHeure()
+        configurerBoutonAjout()
     }
     
-    private fun addConsultation() {
-        val date = binding.dateEditText.text.toString().trim()
-        val time = binding.timeEditText.text.toString().trim()
-        val countText = binding.countEditText.text.toString().trim()
+    private fun initialiserDependances(): Boolean {
+        val activitePrincipale = activity as? MainActivity
+        if (activitePrincipale == null) {
+            return false
+        }
         
-        if (date.isEmpty() || time.isEmpty() || countText.isEmpty()) {
-            Toast.makeText(context, getString(R.string.error_empty_fields), Toast.LENGTH_SHORT).show()
+        gestionnaireReseau = activitePrincipale.obtenirGestionnaireReseau()
+        return true
+    }
+    
+    private fun configurerSelecteurDate() {
+        val calendrier = Calendar.getInstance()
+        
+        liage.dateEditText.setOnClickListener {
+            DatePickerDialog(
+                requireContext(),
+                { _, annee, mois, jour ->
+                    calendrier.set(annee, mois, jour)
+                    val formatDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    liage.dateEditText.setText(formatDate.format(calendrier.time))
+                },
+                calendrier.get(Calendar.YEAR),
+                calendrier.get(Calendar.MONTH),
+                calendrier.get(Calendar.DAY_OF_MONTH)
+            ).show()
+        }
+        
+        configurerEditTextLectureSeule(liage.dateEditText)
+    }
+    
+    private fun configurerSelecteurHeure() {
+        val calendrier = Calendar.getInstance()
+        
+        liage.timeEditText.setOnClickListener {
+            TimePickerDialog(
+                requireContext(),
+                { _, heure, minute ->
+                    calendrier.set(Calendar.HOUR_OF_DAY, heure)
+                    calendrier.set(Calendar.MINUTE, minute)
+                    val formatHeure = SimpleDateFormat("HH:mm", Locale.getDefault())
+                    liage.timeEditText.setText(formatHeure.format(calendrier.time))
+                },
+                calendrier.get(Calendar.HOUR_OF_DAY),
+                calendrier.get(Calendar.MINUTE),
+                true
+            ).show()
+        }
+        
+        configurerEditTextLectureSeule(liage.timeEditText)
+    }
+    
+    private fun configurerEditTextLectureSeule(champ: EditText) {
+        champ.isFocusable = false
+        champ.isClickable = true
+    }
+
+    private fun configurerBoutonAjout() {
+        liage.addButton.setOnClickListener {
+            ajouterConsultation()
+        }
+    }
+    
+    private fun ajouterConsultation() {
+        val date = liage.dateEditText.text.toString().trim()
+        val heure = liage.timeEditText.text.toString().trim()
+        val dureeTexte = liage.durationEditText.text.toString().trim()
+        val nombreTexte = liage.countEditText.text.toString().trim()
+        
+        if (champsVides(date, heure, dureeTexte, nombreTexte)) {
+            afficherMessage(getString(R.string.error_empty_fields))
             return
         }
         
-        val count = countText.toIntOrNull()
-        if (count == null || count <= 0) {
-            Toast.makeText(context, "Le nombre de consultations doit être supérieur à 0", Toast.LENGTH_SHORT).show()
+        val nombre = nombreTexte.toIntOrNull()
+        if (nombre == null || nombre <= 0) {
+            afficherMessage(getString(R.string.error_count_invalid))
             return
         }
         
-        binding.addButton.isEnabled = false
+        val duree = dureeTexte.toIntOrNull()
+        if (duree == null || duree <= 0) {
+            afficherMessage(getString(R.string.error_duration_invalid))
+            return
+        }
+        
+        envoyerRequeteAjout(date, heure, nombre, duree)
+    }
+    
+    private fun champsVides(vararg champs: String): Boolean {
+        return champs.any { it.isEmpty() }
+    }
+    
+    private fun envoyerRequeteAjout(date: String, heure: String, nombre: Int, duree: Int) {
+        liage.addButton.isEnabled = false
         
         lifecycleScope.launch {
             try {
-                val request = CAPRequest.AddConsultationRequest(
+                val requete = CAPRequest.AddConsultationRequest(
                     date = date,
-                    hour = time,
-                    duration = 30,
-                    consecutiveCount = count
+                    hour = heure,
+                    consecutiveCount = nombre,
+                    duree = duree
                 )
                 
-                val responseResult = networkManager.sendRequest(request)
+                val resultatReponse = gestionnaireReseau.sendRequest(requete)
                 
-                responseResult.onSuccess { response ->
-                    withContext(Dispatchers.Main) {
-                        binding.addButton.isEnabled = true
-                        
-                        if (response.success) {
-                            Toast.makeText(context, getString(R.string.success_consultation_added), Toast.LENGTH_SHORT).show()
-                            binding.dateEditText.text?.clear()
-                            binding.timeEditText.text?.clear()
-                            binding.countEditText.text?.clear()
-                        } else {
-                            Toast.makeText(context, response.message, Toast.LENGTH_LONG).show()
-                        }
-                    }
-                }.onFailure { error ->
-                    withContext(Dispatchers.Main) {
-                        binding.addButton.isEnabled = true
-                        var errorMsg = "Erreur"
-                        if (error.message != null) {
-                            errorMsg = error.message!!
-                        }
-                        Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                    }
+                resultatReponse.onSuccess { reponse ->
+                    traiterReponseAjout(reponse)
+                }.onFailure { erreur ->
+                    gererErreur(erreur.message ?: "Erreur")
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    binding.addButton.isEnabled = true
-                    var errorMsg = "Erreur"
-                    if (e.message != null) {
-                        errorMsg = e.message!!
-                    }
-                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                }
+                gererErreur(e.message ?: "Erreur")
             }
         }
     }
     
+    private suspend fun traiterReponseAjout(reponse: CAPResponse) {
+        withContext(Dispatchers.Main) {
+            liage.addButton.isEnabled = true
+            
+            if (reponse.success) {
+                afficherMessage(getString(R.string.success_consultation_added))
+                viderChamps()
+            } else {
+                afficherMessage(reponse.message, longDuration = true)
+            }
+        }
+    }
+    
+    private suspend fun gererErreur(message: String) {
+        withContext(Dispatchers.Main) {
+            liage.addButton.isEnabled = true
+            afficherMessage(message)
+        }
+    }
+    
+    private fun viderChamps() {
+        liage.dateEditText.text?.clear()
+        liage.timeEditText.text?.clear()
+        liage.durationEditText.text?.clear()
+        liage.countEditText.text?.clear()
+    }
+    
+    private fun afficherMessage(message: String, longDuration: Boolean = false) {
+        Toast.makeText(context, message, if (longDuration) Toast.LENGTH_LONG else Toast.LENGTH_SHORT).show()
+    }
+    
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null
+        _liage = null
     }
 }

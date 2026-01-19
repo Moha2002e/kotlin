@@ -1,9 +1,7 @@
 package com.example.myapplication.model
 
-/**
- * Requêtes du protocole CAP (Consultation Administration Protocol)
- */
-sealed class CAPRequest { // c'est une classe scellée pour représenter les différentes requêtes du protocole CAP
+
+sealed class CAPRequest {
     abstract val command: String
     
     data class LoginRequest(
@@ -16,9 +14,9 @@ sealed class CAPRequest { // c'est une classe scellée pour représenter les dif
     data class AddConsultationRequest(
         val date: String,
         val hour: String,
-        val duration: Int,
-        val consecutiveCount: Int
-    ) : CAPRequest() { // le caprequest sert à ajouter une consultation
+        val consecutiveCount: Int,
+        val duree: Int
+    ) : CAPRequest() {
         override val command = "ADD_CONSULTATION"
     }
     
@@ -52,14 +50,16 @@ sealed class CAPRequest { // c'est une classe scellée pour représenter les dif
         override val command = "DELETE_CONSULTATION"
     }
     
+    object ListPatientsRequest : CAPRequest() {
+        override val command = "LIST_PATIENTS"
+    }
+    
     object LogoutRequest : CAPRequest() {
         override val command = "LOGOUT"
     }
 }
 
-/**
- * Réponses du protocole CAP
- */
+
 data class CAPResponse(
     val success: Boolean,
     val message: String,

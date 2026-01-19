@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Consultation Management</string>
     
-    <!-- Login -->
+
     <string name="login_title">Doctor Login</string>
     <string name="login_hint">Username</string>
     <string name="password_hint">Password</string>
@@ -11,23 +11,25 @@
     <string name="error_connection_failed">Unable to connect to server</string>
     <string name="error_request_failed">Error: %1$s</string>
     
-    <!-- Main -->
+
     <string name="nav_consultations">My Consultations</string>
     <string name="nav_add_consultation">Add Consultation</string>
     <string name="nav_add_patient">Add Patient</string>
     <string name="nav_search">Search</string>
     <string name="nav_logout">Logout</string>
     
-    <!-- Consultations -->
+
     <string name="consultations_title">Consultations</string>
     <string name="no_consultations">No consultations</string>
     <string name="consultation_date">Date: %1$s</string>
     <string name="consultation_time">Time: %1$s</string>
     <string name="consultation_patient">Patient: %1$s</string>
     <string name="consultation_reason">Reason: %1$s</string>
+    <string name="consultation_reason_hint">Reason</string>
     <string name="consultation_free">Free</string>
+    <string name="edit_consultation">Edit Consultation</string>
     
-    <!-- Add Consultation -->
+
     <string name="add_consultation_title">New Consultation</string>
     <string name="date_hint">Date (YYYY-MM-DD)</string>
     <string name="time_hint">Time (HH:mm)</string>
@@ -36,18 +38,18 @@
     <string name="add_button">Add</string>
     <string name="success_consultation_added">Consultations added successfully</string>
     
-    <!-- Add Patient -->
+
     <string name="add_patient_title">New Patient</string>
     <string name="first_name_hint">First name</string>
     <string name="last_name_hint">Last name</string>
     <string name="success_patient_added">Patient added successfully (ID: %1$d)</string>
     
-    <!-- Search -->
+
     <string name="search_title">Search Consultations</string>
     <string name="search_by_date">Search by date</string>
     <string name="search_button">Search</string>
     
-    <!-- Common -->
+
     <string name="delete">Delete</string>
     <string name="edit">Edit</string>
     <string name="save">Save</string>

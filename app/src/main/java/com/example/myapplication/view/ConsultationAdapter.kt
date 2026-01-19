@@ -1,6 +1,8 @@
 package com.example.myapplication.view
 
+import android.graphics.Typeface
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -10,114 +12,155 @@ import com.example.myapplication.databinding.ItemConsultationBinding
 import hepl.fead.model.entity.Consultation
 
 class ConsultationAdapter(
-    var onDeleteClick: (Consultation) -> Unit,
-    var onUpdateClick: (Consultation) -> Unit,
-    private val showDeleteButton: Boolean = true
-) : ListAdapter<Consultation, ConsultationAdapter.ViewHolder>(ConsultationDiffCallback()) {
+    var surClicSupprimer: (Consultation) -> Unit,
+    var surClicEditer: (Consultation) -> Unit = {},
+    private val afficherBoutonSupprimer: Boolean = true
+) : ListAdapter<Consultation, ConsultationAdapter.PorteurDeVue>(ComparateurDiffConsultation()) {
     
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val binding = ItemConsultationBinding.inflate(
+    override fun onCreateViewHolder(parent: ViewGroup, typeVue: Int): PorteurDeVue {
+        val liage = ItemConsultationBinding.inflate(
             LayoutInflater.from(parent.context),
             parent,
             false
         )
-        return ViewHolder(binding)
+        return PorteurDeVue(liage)
     }
     
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position))
+    override fun onBindViewHolder(porteur: PorteurDeVue, position: Int) {
+        porteur.lier(getItem(position))
     }
     
-    inner class ViewHolder(
-        private val binding: ItemConsultationBinding
-    ) : RecyclerView.ViewHolder(binding.root) {
+    inner class PorteurDeVue(
+        private val liage: ItemConsultationBinding
+    ) : RecyclerView.ViewHolder(liage.root) {
         
-        fun bind(consultation: Consultation) {
-            var dateText = ""
-            if (consultation.getDate() != null) {
-                dateText = consultation.getDate()!!
-            }
-            binding.consultationDateTextView.text = dateText
+        fun lier(consultation: Consultation) {
+            afficherDate(consultation)
+            afficherHeure(consultation)
+            afficherPatient(consultation)
+            afficherRaison(consultation)
+            afficherDuree(consultation)
+            configurerBoutons(consultation)
+        }
+        
+        private fun afficherDate(consultation: Consultation) {
+            val texteDate = consultation.getDate() ?: ""
+            liage.consultationDateTextView.text = texteDate
+        }
+        
+        private fun afficherHeure(consultation: Consultation) {
+            val texteHeure = consultation.getHour() ?: ""
+            liage.consultationTimeTextView.text = texteHeure
+        }
+        
+        private fun afficherPatient(consultation: Consultation) {
+            val idPatient = consultation.getPatient_id()
             
-            var timeText = ""
-            if (consultation.getHour() != null) {
-                timeText = consultation.getHour()!!
-            }
-            binding.consultationTimeTextView.text = timeText
-            
-            val patientId = consultation.getPatient_id()
-            if (patientId != null) {
-                val firstName = consultation.getPatient_first_name()
-                val lastName = consultation.getPatient_last_name()
-                var patientName = ""
-                if (firstName != null && firstName.isNotEmpty()) {
-                    patientName = patientName + firstName
-                }
-                if (lastName != null && lastName.isNotEmpty()) {
-                    if (patientName.isNotEmpty()) {
-                        patientName = patientName + " "
-                    }
-                    patientName = patientName + lastName
-                }
-                if (patientName.isEmpty()) {
-                    patientName = "Patient ID: " + patientId
-                }
-                binding.consultationPatientTextView.text = binding.root.context.getString(
-                    R.string.consultation_patient,
-                    patientName
-                )
+            if (idPatient != null) {
+                configurerPatientAssigne(consultation, idPatient)
             } else {
-                binding.consultationPatientTextView.text = binding.root.context.getString(
-                    R.string.consultation_patient,
-                    binding.root.context.getString(R.string.consultation_free)
-                )
+                configurerPatientNonAssigne()
             }
+        }
+        
+        private fun configurerPatientAssigne(consultation: Consultation, idPatient: Int) {
+            val nomPatient = construireNomPatient(consultation, idPatient)
             
-            val reason = consultation.getReason()
-            if (reason != null && reason.isNotEmpty()) {
-                binding.consultationReasonTextView.text = binding.root.context.getString(
+            liage.consultationPatientTextView.text = liage.root.context.getString(
+                R.string.consultation_patient,
+                nomPatient
+            )
+            liage.consultationPatientTextView.setTextColor(
+                liage.root.context.getColor(android.R.color.black)
+            )
+            liage.consultationPatientTextView.setTypeface(null, Typeface.NORMAL)
+        }
+        
+        private fun construireNomPatient(consultation: Consultation, idPatient: Int): String {
+            val prenom = consultation.getPatient_first_name()
+            val nom = consultation.getPatient_last_name()
+            
+            return if (!prenom.isNullOrEmpty() || !nom.isNullOrEmpty()) {
+                "${prenom ?: ""} ${nom ?: ""}".trim()
+            } else {
+                liage.root.context.getString(R.string.patient_id, idPatient)
+            }
+        }
+        
+        private fun configurerPatientNonAssigne() {
+            liage.consultationPatientTextView.text = liage.root.context.getString(
+                R.string.consultation_patient,
+                liage.root.context.getString(R.string.consultation_free)
+            )
+            liage.consultationPatientTextView.setTextColor(
+                liage.root.context.getColor(android.R.color.holo_orange_dark)
+            )
+            liage.consultationPatientTextView.setTypeface(null, Typeface.BOLD)
+        }
+        
+        private fun afficherRaison(consultation: Consultation) {
+            val raison = consultation.getReason()
+            if (!raison.isNullOrEmpty()) {
+                liage.consultationReasonTextView.text = liage.root.context.getString(
                     R.string.consultation_reason,
-                    reason
+                    raison
                 )
-                binding.consultationReasonTextView.visibility = android.view.View.VISIBLE
+                liage.consultationReasonTextView.visibility = View.VISIBLE
             } else {
-                binding.consultationReasonTextView.visibility = android.view.View.GONE
+                liage.consultationReasonTextView.visibility = View.GONE
+            }
+        }
+        
+        private fun afficherDuree(consultation: Consultation) {
+            val duree = consultation.getDuree()
+            if (duree != null && duree > 0) {
+                liage.consultationDurationTextView.text = liage.root.context.getString(
+                    R.string.consultation_duration,
+                    duree.toString()
+                )
+                liage.consultationDurationTextView.visibility = View.VISIBLE
+            } else {
+                liage.consultationDurationTextView.visibility = View.GONE
+            }
+        }
+        
+        private fun configurerBoutons(consultation: Consultation) {
+            if (afficherBoutonSupprimer) {
+                configurerBoutonsEditions(consultation)
+            } else {
+                masquerBoutonsEditions()
+            }
+        }
+        
+        private fun configurerBoutonsEditions(consultation: Consultation) {
+            liage.deleteButton.visibility = View.VISIBLE
+            liage.deleteButton.setOnClickListener {
+                surClicSupprimer(consultation)
             }
             
-            if (showDeleteButton) {
-                binding.deleteButton.visibility = android.view.View.VISIBLE
-                binding.deleteButton.setOnClickListener {
-                    onDeleteClick.invoke(consultation)
-                }
-            } else {
-                binding.deleteButton.visibility = android.view.View.GONE
+            liage.editButton.visibility = View.VISIBLE
+            liage.editButton.setOnClickListener {
+                surClicEditer(consultation)
             }
-            
-            binding.root.setOnClickListener {
-                onUpdateClick.invoke(consultation)
-            }
+        }
+        
+        private fun masquerBoutonsEditions() {
+            liage.deleteButton.visibility = View.GONE
+            liage.editButton.visibility = View.GONE
         }
     }
     
-    class ConsultationDiffCallback : DiffUtil.ItemCallback<Consultation>() {
-        override fun areItemsTheSame(oldItem: Consultation, newItem: Consultation): Boolean {
-            return oldItem.getId() == newItem.getId()
+    class ComparateurDiffConsultation : DiffUtil.ItemCallback<Consultation>() {
+        override fun areItemsTheSame(ancienItem: Consultation, nouvelItem: Consultation): Boolean {
+            return ancienItem.getId() == nouvelItem.getId()
         }
         
-        override fun areContentsTheSame(oldItem: Consultation, newItem: Consultation): Boolean {
-            if (oldItem.getDate() != newItem.getDate()) {
-                return false
-            }
-            if (oldItem.getHour() != newItem.getHour()) {
-                return false
-            }
-            if (oldItem.getPatient_id() != newItem.getPatient_id()) {
-                return false
-            }
-            if (oldItem.getReason() != newItem.getReason()) {
-                return false
-            }
-            return true
+        override fun areContentsTheSame(ancienItem: Consultation, nouvelItem: Consultation): Boolean {
+            return ancienItem.getDate() == nouvelItem.getDate() &&
+                   ancienItem.getHour() == nouvelItem.getHour() &&
+                   ancienItem.getPatient_id() == nouvelItem.getPatient_id() &&
+                   ancienItem.getReason() == nouvelItem.getReason() &&
+                   ancienItem.getDuree() == nouvelItem.getDuree()
         }
     }
 }

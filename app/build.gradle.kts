@@ -45,29 +45,29 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     
-    // Lifecycle
+
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.lifecycle.livedata)
     
-    // Navigation
+
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui)
     
-    // Coroutines
+
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
     
-    // Gson pour sérialisation JSON
+
     implementation(libs.gson)
     
-    // SwipeRefreshLayout
+
     implementation(libs.androidx.swiperefreshlayout)
     
-    // ThreeTenABP for LocalDate/LocalTime compatibility with minSdk 24
+
     implementation(libs.threetenabp)
     
     implementation(libs.firebase.crashlytics.buildtools)
 
-    // Desugaring pour java.time (compatibilité API < 26)
+
     coreLibraryDesugaring(libs.desugar)
 }

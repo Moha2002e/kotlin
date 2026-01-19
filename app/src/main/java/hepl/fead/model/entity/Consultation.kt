@@ -2,9 +2,7 @@ package hepl.fead.model.entity
 
 import java.io.Serializable
 
-/**
- * Classe compatible avec Consultation du serveur CAP
- */
+
 class Consultation : Serializable {
     private var id: Int? = null
     private var doctor_id: Int? = null
@@ -15,6 +13,7 @@ class Consultation : Serializable {
     private var patient_first_name: String? = null
     private var patient_last_name: String? = null
     private var patient_birth_date: String? = null
+    private var duree: Int? = null
     
     fun getId(): Int? = id
     fun setId(id: Int?) { this.id = id }
@@ -34,6 +33,8 @@ class Consultation : Serializable {
     fun setPatient_last_name(patient_last_name: String?) { this.patient_last_name = patient_last_name }
     fun getPatient_birth_date(): String? = patient_birth_date
     fun setPatient_birth_date(patient_birth_date: String?) { this.patient_birth_date = patient_birth_date }
+    fun getDuree(): Int? = duree
+    fun setDuree(duree: Int?) { this.duree = duree }
 
     companion object {
         private const val serialVersionUID: Long = 1L
