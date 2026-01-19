@@ -14,7 +14,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/add_patient_title"
+            android:text="@string/update_consultation_title"
             android:textColor="@android:color/white"
             android:textSize="24sp"
             android:textStyle="bold"
@@ -25,11 +25,11 @@
             android:shadowDy="2"
             android:shadowRadius="4" />
 
-        <!-- First Name -->
+        <!-- Date Field -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/first_name_hint"
+            android:text="@string/date_hint"
             android:textColor="@android:color/white"
             android:textStyle="bold"
             android:textSize="16sp"
@@ -40,28 +40,64 @@
             android:layout_height="wrap_content"
             app:boxBackgroundMode="none"
             app:hintEnabled="false"
-            app:startIconDrawable="@android:drawable/ic_menu_myplaces"
+            app:startIconDrawable="@android:drawable/ic_menu_today"
             app:startIconTint="@android:color/white">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/firstNameEditText"
+                android:id="@+id/dateEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_input_layout"
-                android:gravity="center_vertical"
+                android:gravity="center"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:inputType="textPersonName"
+                android:inputType="date"
+                android:clickable="true"
+                android:focusable="false"
                 android:textColor="#333333" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Last Name -->
+        <!-- Time Field -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="@string/last_name_hint"
+            android:text="@string/time_hint"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:boxBackgroundMode="none"
+            app:hintEnabled="false"
+            app:startIconDrawable="@android:drawable/ic_menu_recent_history"
+            app:startIconTint="@android:color/white">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/timeEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_input_layout"
+                android:gravity="center"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:inputType="time"
+                android:clickable="true"
+                android:focusable="false"
+                android:textColor="#333333" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Patient ID Field -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/patient_id_hint"
             android:textColor="@android:color/white"
             android:textStyle="bold"
             android:textSize="16sp"
@@ -76,25 +112,57 @@
             app:startIconTint="@android:color/white">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/lastNameEditText"
+                android:id="@+id/patientIdEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_input_layout"
+                android:gravity="center"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:inputType="number"
+                android:textColor="#333333" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Reason Field -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/reason_hint"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:boxBackgroundMode="none"
+            app:hintEnabled="false"
+            app:startIconDrawable="@android:drawable/ic_menu_edit"
+            app:startIconTint="@android:color/white">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/reasonEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_input_layout"
                 android:gravity="center_vertical"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:inputType="textPersonName"
+                android:inputType="text"
                 android:textColor="#333333" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/addButton"
+            android:id="@+id/updateButton"
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:layout_marginTop="48dp"
             android:backgroundTint="@android:color/white"
-            android:text="@string/add_button"
+            android:text="@string/update_button"
             android:textColor="#667EEA"
             android:textSize="18sp"
             android:textStyle="bold"
@@ -103,4 +171,3 @@
     </LinearLayout>
 
 </ScrollView>
-

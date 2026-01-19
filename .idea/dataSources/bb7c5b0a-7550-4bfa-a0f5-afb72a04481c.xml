@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<dataSource name="PourStudent@192.168.0.15">
-  <database-model serializer="dbm" dbms="MYSQL" family-id="MYSQL" format-version="4.53">
+<dataSource name="PourStudent@10.236.67.99">
+  <database-model serializer="dbm" dbms="MYSQL" family-id="MYSQL" format-version="4.54">
     <root id="1">
       <DefaultCasing>exact</DefaultCasing>
       <DefaultEngine>InnoDB</DefaultEngine>
@@ -877,8 +877,8 @@ PourStudent|schema||Student||UPDATE|G</Grants>
     <schema id="274" parent="1" name="PourStudent">
       <AutoIntrospectionLevel>3</AutoIntrospectionLevel>
       <Current>1</Current>
-      <LastIntrospectionLevel>3</LastIntrospectionLevel>
-      <LastIntrospectionLocalTimestamp>2025-12-06.21:58:40</LastIntrospectionLocalTimestamp>
+      <LastIntrospectionLevel>1</LastIntrospectionLevel>
+      <LastIntrospectionLocalTimestamp>2025-12-18.10:18:03</LastIntrospectionLocalTimestamp>
       <CollationName>utf8_general_ci</CollationName>
     </schema>
     <schema id="275" parent="1" name="information_schema">
@@ -887,31 +887,31 @@ PourStudent|schema||Student||UPDATE|G</Grants>
     <user id="276" parent="1" name="Student"/>
     <table id="277" parent="274" name="consultations">
       <Comment>Table des consultations médicales</Comment>
-      <DetailsLevel>3</DetailsLevel>
+      <DetailsLevel>2</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
     <table id="278" parent="274" name="doctor">
       <Comment>Table des médecins</Comment>
-      <DetailsLevel>3</DetailsLevel>
+      <DetailsLevel>2</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
     <table id="279" parent="274" name="patient">
       <Comment>Table des patients</Comment>
-      <DetailsLevel>3</DetailsLevel>
+      <DetailsLevel>2</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
     <table id="280" parent="274" name="reports">
       <Comment>Table des rapports médicaux</Comment>
-      <DetailsLevel>3</DetailsLevel>
+      <DetailsLevel>2</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
     <table id="281" parent="274" name="specialties">
       <Comment>Table des spécialités médicales</Comment>
-      <DetailsLevel>3</DetailsLevel>
+      <DetailsLevel>2</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>

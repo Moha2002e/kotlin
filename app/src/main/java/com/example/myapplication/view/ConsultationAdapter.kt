@@ -11,6 +11,7 @@ import hepl.fead.model.entity.Consultation
 
 class ConsultationAdapter(
     var onDeleteClick: (Consultation) -> Unit,
+    var onUpdateClick: (Consultation) -> Unit,
     private val showDeleteButton: Boolean = true
 ) : ListAdapter<Consultation, ConsultationAdapter.ViewHolder>(ConsultationDiffCallback()) {
     
@@ -90,6 +91,10 @@ class ConsultationAdapter(
                 }
             } else {
                 binding.deleteButton.visibility = android.view.View.GONE
+            }
+            
+            binding.root.setOnClickListener {
+                onUpdateClick.invoke(consultation)
             }
         }
     }

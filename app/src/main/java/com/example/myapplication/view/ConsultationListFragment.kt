@@ -20,6 +20,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+import androidx.navigation.fragment.findNavController
+
 class ConsultationListFragment : Fragment() {
     private var _binding: FragmentConsultationListBinding? = null
     private val binding get() = _binding!!
@@ -50,6 +52,11 @@ class ConsultationListFragment : Fragment() {
             onDeleteClick = { consultation ->
                 deleteConsultation(consultation)
             },
+            onUpdateClick = { consultation ->
+                val bundle = Bundle()
+                bundle.putSerializable("consultation", consultation)
+                findNavController().navigate(R.id.action_nav_consultations_to_nav_update_consultation, bundle)
+            },
             showDeleteButton = true
         )
         
@@ -59,7 +66,10 @@ class ConsultationListFragment : Fragment() {
         binding.swipeRefreshLayout.setOnRefreshListener {
             loadConsultations()
         }
-        
+    }
+
+    override fun onResume() {
+        super.onResume()
         loadConsultations()
     }
     

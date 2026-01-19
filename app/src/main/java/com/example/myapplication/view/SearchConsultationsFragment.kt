@@ -19,6 +19,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+import androidx.navigation.fragment.findNavController
+
 class SearchConsultationsFragment : Fragment() {
     private var _binding: FragmentSearchConsultationsBinding? = null
     private val binding get() = _binding!!
@@ -46,15 +48,38 @@ class SearchConsultationsFragment : Fragment() {
         
         adapter = ConsultationAdapter(
             onDeleteClick = { },
+            onUpdateClick = { consultation ->
+                val bundle = Bundle()
+                bundle.putSerializable("consultation", consultation)
+                findNavController().navigate(R.id.action_nav_search_to_nav_update_consultation, bundle)
+            },
             showDeleteButton = false
         )
         
         binding.resultsRecyclerView.layoutManager = LinearLayoutManager(context)
         binding.resultsRecyclerView.adapter = adapter
+
+        binding.dateEditText.setOnClickListener {
+            showDatePicker()
+        }
         
         binding.searchButton.setOnClickListener {
             searchConsultations()
         }
+    }
+
+    private fun showDatePicker() {
+        val calendar = java.util.Calendar.getInstance()
+        val year = calendar.get(java.util.Calendar.YEAR)
+        val month = calendar.get(java.util.Calendar.MONTH)
+        val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+
+        val datePickerDialog = android.app.DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
+            val formattedDate = String.format("%04d-%02d-%02d", selectedYear, selectedMonth + 1, selectedDay)
+            binding.dateEditText.setText(formattedDate)
+        }, year, month, day)
+
+        datePickerDialog.show()
     }
     
     private fun searchConsultations() {

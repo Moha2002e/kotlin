@@ -9,7 +9,11 @@
         android:id="@+id/nav_consultations"
         android:name="com.example.myapplication.view.ConsultationListFragment"
         android:label="@string/nav_consultations"
-        tools:layout="@layout/fragment_consultation_list" />
+        tools:layout="@layout/fragment_consultation_list">
+        <action
+            android:id="@+id/action_nav_consultations_to_nav_update_consultation"
+            app:destination="@id/nav_update_consultation" />
+    </fragment>
 
     <fragment
         android:id="@+id/nav_add_consultation"
@@ -27,7 +31,17 @@
         android:id="@+id/nav_search"
         android:name="com.example.myapplication.view.SearchConsultationsFragment"
         android:label="@string/nav_search"
-        tools:layout="@layout/fragment_search_consultations" />
+        tools:layout="@layout/fragment_search_consultations">
+        <action
+            android:id="@+id/action_nav_search_to_nav_update_consultation"
+            app:destination="@id/nav_update_consultation" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_update_consultation"
+        android:name="com.example.myapplication.view.UpdateConsultationFragment"
+        android:label="@string/update_consultation_title"
+        tools:layout="@layout/fragment_update_consultation" />
 
 </navigation>
 

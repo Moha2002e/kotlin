@@ -38,10 +38,45 @@ class AddConsultationFragment : Fragment() {
         }
         
         networkManager = mainActivity.getNetworkManager()
+
+        binding.dateEditText.setOnClickListener {
+            showDatePicker()
+        }
+
+        binding.timeEditText.setOnClickListener {
+            showTimePicker()
+        }
         
         binding.addButton.setOnClickListener {
             addConsultation()
         }
+    }
+
+    private fun showDatePicker() {
+        val calendar = java.util.Calendar.getInstance()
+        val year = calendar.get(java.util.Calendar.YEAR)
+        val month = calendar.get(java.util.Calendar.MONTH)
+        val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+
+        val datePickerDialog = android.app.DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
+            val formattedDate = String.format("%04d-%02d-%02d", selectedYear, selectedMonth + 1, selectedDay)
+            binding.dateEditText.setText(formattedDate)
+        }, year, month, day)
+
+        datePickerDialog.show()
+    }
+
+    private fun showTimePicker() {
+        val calendar = java.util.Calendar.getInstance()
+        val hour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
+        val minute = calendar.get(java.util.Calendar.MINUTE)
+
+        val timePickerDialog = android.app.TimePickerDialog(requireContext(), { _, selectedHour, selectedMinute ->
+            val formattedTime = String.format("%02d:%02d", selectedHour, selectedMinute)
+            binding.timeEditText.setText(formattedTime)
+        }, hour, minute, true)
+
+        timePickerDialog.show()
     }
     
     private fun addConsultation() {

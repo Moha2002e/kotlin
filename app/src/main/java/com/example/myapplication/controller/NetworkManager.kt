@@ -102,17 +102,15 @@ class NetworkManager(
     
     suspend fun sendRequest(request: CAPRequest): Result<CAPResponse> = withContext(Dispatchers.IO) {
         try {
-            if (socket == null) {
-                return@withContext Result.failure(Exception("Socket non connecté"))
+            if (!isConnected()) {
+                val connectResult = connect()
+                if (connectResult.isFailure) {
+                    return@withContext Result.failure(Exception("Impossible de se reconnecter au serveur"))
+                }
             }
-            if (socket?.isClosed == true) {
-                return@withContext Result.failure(Exception("Socket fermé"))
-            }
-            if (outputStream == null) {
-                return@withContext Result.failure(Exception("OutputStream non initialisé"))
-            }
-            if (inputStream == null) {
-                return@withContext Result.failure(Exception("InputStream non initialisé"))
+            
+            if (socket == null || outputStream == null || inputStream == null) {
+                return@withContext Result.failure(Exception("Erreur interne de connexion"))
             }
             
             val requeteObj = convertRequest(request)
